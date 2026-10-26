@@ -3,14 +3,15 @@ import { loginAction } from "../actions";
 export default async function AdminLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, next } = await searchParams;
 
   return (
     <main className="flex-1 max-w-sm mx-auto w-full px-6 py-24 flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Admin Login</h1>
+      <h1 className="text-2xl font-semibold">Log in</h1>
       <form action={loginAction} className="flex flex-col gap-4">
+        <input type="hidden" name="next" value={next ?? ""} />
         <input
           type="password"
           name="password"

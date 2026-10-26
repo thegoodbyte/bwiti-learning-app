@@ -20,10 +20,14 @@ import { slugify } from "@/lib/slug";
 
 export async function loginAction(formData: FormData) {
   const password = String(formData.get("password") ?? "");
+  const nextParam = String(formData.get("next") ?? "");
+  const destination =
+    nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
   const sitePassword = process.env.SITE_PASSWORD;
 
   if (!sitePassword || password !== sitePassword) {
-    redirect("/admin/login?error=1");
+    const nextQuery = destination !== "/" ? `&next=${encodeURIComponent(destination)}` : "";
+    redirect(`/admin/login?error=1${nextQuery}`);
   }
 
   const token = await adminSessionToken();
@@ -34,7 +38,7 @@ export async function loginAction(formData: FormData) {
     sameSite: "lax",
     path: "/",
   });
-  redirect("/admin");
+  redirect(destination);
 }
 
 export async function logoutAction() {
