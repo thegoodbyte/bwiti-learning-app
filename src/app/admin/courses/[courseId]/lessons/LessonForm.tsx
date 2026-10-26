@@ -76,7 +76,6 @@ export function LessonForm({
       file.name,
       file.type || "application/octet-stream"
     );
-    console.log("Got upload URL:", url);
     await uploadWithProgress(url, file, onProgress);
     return key;
   }

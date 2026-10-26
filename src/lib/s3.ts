@@ -17,6 +17,11 @@ const s3Client = new S3Client({
   region: process.env.S3_REGION ?? process.env.AWS_REGION,
   endpoint: process.env.S3_ENDPOINT,
   forcePathStyle: process.env.S3_URL_STYLE === "path",
+  // Tigris (and most non-AWS S3-compatible providers) don't support the
+  // CRC32 request checksums the SDK attaches by default since v3.729,
+  // which breaks signature validation with SignatureDoesNotMatch.
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
   credentials: {
     accessKeyId: (process.env.S3_ACCESS_KEY_ID ?? process.env.AWS_ACCESS_KEY_ID)!,
     secretAccessKey: (process.env.S3_SECRET_ACCESS_KEY ?? process.env.AWS_SECRET_ACCESS_KEY)!,
