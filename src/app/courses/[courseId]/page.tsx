@@ -2,13 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCourseWithLessons, type Lesson } from "@/lib/db";
 import { getSignedGetUrl } from "@/lib/s3";
+import { LoopablePlayer } from "./LoopablePlayer";
 
 export const dynamic = "force-dynamic";
 
 async function LessonMedia({ lesson }: { lesson: Lesson }) {
   if (lesson.type === "video" && lesson.videoKey) {
     const url = await getSignedGetUrl(lesson.videoKey);
-    return <video controls src={url} className="w-full rounded-md" />;
+    return <LoopablePlayer src={url} type="video" />;
   }
 
   if (lesson.type === "audio") {
@@ -19,7 +20,7 @@ async function LessonMedia({ lesson }: { lesson: Lesson }) {
 
     return (
       <div className="flex flex-col gap-3">
-        {audioUrl && <audio controls src={audioUrl} className="w-full" />}
+        {audioUrl && <LoopablePlayer src={audioUrl} type="audio" />}
         {lyricsImageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={lyricsImageUrl} alt="Lyrics" className="rounded-md max-w-full" />
