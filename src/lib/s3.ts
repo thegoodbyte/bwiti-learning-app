@@ -3,6 +3,7 @@ import {
   S3Client,
   GetObjectCommand,
   PutObjectCommand,
+  DeleteObjectCommand,
   PutBucketCorsCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -52,6 +53,10 @@ export async function getSignedUploadUrl(
 export async function getSignedGetUrl(key: string, expiresInSeconds = 3600) {
   const command = new GetObjectCommand({ Bucket: bucketName, Key: key });
   return getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
+}
+
+export async function deleteObject(key: string) {
+  await s3Client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }));
 }
 
 export async function ensureBucketCors() {

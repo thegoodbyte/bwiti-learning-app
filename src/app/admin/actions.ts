@@ -11,10 +11,11 @@ import {
   createLesson,
   updateLessonFields,
   updateLessonMedia,
+  clearLessonMedia,
   deleteLesson,
   type LessonType,
 } from "@/lib/db";
-import { getSignedUploadUrl } from "@/lib/s3";
+import { getSignedUploadUrl, deleteObject } from "@/lib/s3";
 import { slugify } from "@/lib/slug";
 
 export async function loginAction(formData: FormData) {
@@ -138,6 +139,28 @@ export async function attachLessonMediaAction(
   }
 ) {
   await updateLessonMedia(lessonId, media);
+  revalidatePath(`/admin/courses/${courseId}`);
+  revalidatePath(`/courses/${courseId}`);
+}
+
+export async function removeLessonMediaAction(
+  courseId: string,
+  lessonId: string,
+  field: "video" | "audio" | "lyricsImage"
+) {
+  if (field !== "video" && field !== "audio" && field !== "lyricsImage") {
+    throw new Error("Invalid media field");
+  }
+
+  const oldKey = await clearLessonMedia(lessonId, field);
+  if (oldKey) {
+    try {
+      await deleteObject(oldKey);
+    } catch (error) {
+      console.error("Failed to delete S3 object for removed media:", error);
+    }
+  }
+
   revalidatePath(`/admin/courses/${courseId}`);
   revalidatePath(`/courses/${courseId}`);
 }

@@ -210,6 +210,25 @@ export async function updateLessonFields(
   );
 }
 
+export async function clearLessonMedia(
+  lessonId: string,
+  field: "video" | "audio" | "lyricsImage"
+): Promise<string | null> {
+  const column =
+    field === "video"
+      ? "video_key"
+      : field === "audio"
+        ? "audio_key"
+        : "lyrics_image_key";
+  const { rows } = await pool.query(
+    `SELECT ${column} AS key FROM lessons WHERE id = $1`,
+    [lessonId]
+  );
+  const oldKey: string | null = rows[0]?.key ?? null;
+  await pool.query(`UPDATE lessons SET ${column} = NULL WHERE id = $1`, [lessonId]);
+  return oldKey;
+}
+
 export async function updateLessonMedia(
   lessonId: string,
   media: {

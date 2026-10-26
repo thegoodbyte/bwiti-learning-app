@@ -7,6 +7,7 @@ import {
   saveLessonTextAction,
   requestLessonUploadUrlAction,
   attachLessonMediaAction,
+  removeLessonMediaAction,
 } from "../../../actions";
 
 function uploadWithProgress(
@@ -61,9 +62,33 @@ export function LessonForm({
   const [audioProgress, setAudioProgress] = useState<number | null>(null);
   const [imageProgress, setImageProgress] = useState<number | null>(null);
 
+  const [hasVideo, setHasVideo] = useState(Boolean(lesson?.videoKey));
+  const [hasAudio, setHasAudio] = useState(Boolean(lesson?.audioKey));
+  const [hasLyricsImage, setHasLyricsImage] = useState(Boolean(lesson?.lyricsImageKey));
+  const [removingField, setRemovingField] = useState<
+    "video" | "audio" | "lyricsImage" | null
+  >(null);
+
   const videoInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const lyricsImageInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleRemoveMedia(field: "video" | "audio" | "lyricsImage") {
+    if (!lesson) return;
+    setRemovingField(field);
+    try {
+      await removeLessonMediaAction(courseId, lesson.id, field);
+      if (field === "video") setHasVideo(false);
+      if (field === "audio") setHasAudio(false);
+      if (field === "lyricsImage") setHasLyricsImage(false);
+      router.refresh();
+    } catch (err) {
+      console.error("Remove media error:", err);
+      setError(err instanceof Error ? err.message : "Failed to remove file.");
+    } finally {
+      setRemovingField(null);
+    }
+  }
 
   async function uploadFile(
     lessonId: string,
@@ -205,7 +230,19 @@ export function LessonForm({
 
       {type === "video" && (
         <label className="flex flex-col gap-1 text-sm">
-          Video file{lesson?.videoKey ? " (replace)" : ""}
+          <span className="flex items-center gap-2">
+            Video file{hasVideo ? " (replace)" : ""}
+            {hasVideo && (
+              <button
+                type="button"
+                onClick={() => handleRemoveMedia("video")}
+                disabled={submitting || removingField === "video"}
+                className="text-red-600 dark:text-red-400 hover:underline disabled:opacity-60"
+              >
+                {removingField === "video" ? "Removing…" : "Remove"}
+              </button>
+            )}
+          </span>
           <input
             type="file"
             name="video"
@@ -221,7 +258,19 @@ export function LessonForm({
       {type === "audio" && (
         <>
           <label className="flex flex-col gap-1 text-sm">
-            Audio file{lesson?.audioKey ? " (replace)" : ""}
+            <span className="flex items-center gap-2">
+              Audio file{hasAudio ? " (replace)" : ""}
+              {hasAudio && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveMedia("audio")}
+                  disabled={submitting || removingField === "audio"}
+                  className="text-red-600 dark:text-red-400 hover:underline disabled:opacity-60"
+                >
+                  {removingField === "audio" ? "Removing…" : "Remove"}
+                </button>
+              )}
+            </span>
             <input
               type="file"
               name="audio"
@@ -233,7 +282,19 @@ export function LessonForm({
             {audioProgress !== null && <ProgressBar percent={audioProgress} />}
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            Lyrics image{lesson?.lyricsImageKey ? " (replace)" : ""}
+            <span className="flex items-center gap-2">
+              Lyrics image{hasLyricsImage ? " (replace)" : ""}
+              {hasLyricsImage && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveMedia("lyricsImage")}
+                  disabled={submitting || removingField === "lyricsImage"}
+                  className="text-red-600 dark:text-red-400 hover:underline disabled:opacity-60"
+                >
+                  {removingField === "lyricsImage" ? "Removing…" : "Remove"}
+                </button>
+              )}
+            </span>
             <input
               type="file"
               name="lyricsImage"
