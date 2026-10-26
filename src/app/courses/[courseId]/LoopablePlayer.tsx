@@ -21,6 +21,7 @@ export function LoopablePlayer({
   const [loopStart, setLoopStart] = useState<number | null>(null);
   const [loopEnd, setLoopEnd] = useState<number | null>(null);
   const [looping, setLooping] = useState(false);
+  const [duration, setDuration] = useState(0);
 
   function handleTimeUpdate() {
     const media = mediaRef.current;
@@ -63,12 +64,27 @@ export function LoopablePlayer({
     controls: true,
     src,
     onTimeUpdate: handleTimeUpdate,
+    onLoadedMetadata: (event: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) =>
+      setDuration(event.currentTarget.duration),
     className: type === "video" ? "w-full rounded-md" : "w-full",
   };
 
   return (
     <div className="flex flex-col gap-2">
       {type === "video" ? <video {...mediaProps} /> : <audio {...mediaProps} />}
+      {duration > 0 && (
+        <div className="relative h-1.5 w-full rounded-full bg-black/10 dark:bg-white/15 overflow-hidden">
+          {hasRange && (
+            <div
+              className="absolute inset-y-0 bg-amber-400 dark:bg-amber-500"
+              style={{
+                left: `${(loopStart! / duration) * 100}%`,
+                width: `${((loopEnd! - loopStart!) / duration) * 100}%`,
+              }}
+            />
+          )}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <button
           type="button"
