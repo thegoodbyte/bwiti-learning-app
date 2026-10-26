@@ -1,7 +1,11 @@
 import Link from "next/link";
-import { courses } from "@/data/courses";
+import { listCourses } from "@/lib/db";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const courses = await listCourses();
+
   return (
     <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-16 flex flex-col gap-10">
       <div className="flex flex-col gap-3">
@@ -22,7 +26,7 @@ export default function Home() {
               {course.description}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-500 mt-3">
-              {course.lessons.length} lessons
+              {course.lessonCount} lessons
             </p>
           </Link>
         ))}

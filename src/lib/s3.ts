@@ -18,38 +18,28 @@ const s3Client = new S3Client({
   },
 });
 
-export function buildLessonAssetKey(
-  courseId: string,
-  lessonId: string,
-  filename: string
-) {
-  return `courses/${courseId}/${lessonId}/${filename}`;
+function buildLessonAssetKey(courseId: string, lessonId: string, filename: string) {
+  return `courses/${courseId}/${lessonId}/${Date.now()}-${filename}`;
 }
 
-export async function getLessonAssetUrl(
+export async function uploadLessonAsset(
   courseId: string,
   lessonId: string,
-  filename: string,
-  expiresInSeconds = 3600
+  file: { name: string; type: string; buffer: Buffer }
 ) {
-  const command = new GetObjectCommand({
-    Bucket: bucketName,
-    Key: buildLessonAssetKey(courseId, lessonId, filename),
-  });
-  return getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
+  const key = buildLessonAssetKey(courseId, lessonId, file.name);
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.type,
+    })
+  );
+  return key;
 }
 
-export async function getLessonAssetUploadUrl(
-  courseId: string,
-  lessonId: string,
-  filename: string,
-  contentType: string,
-  expiresInSeconds = 3600
-) {
-  const command = new PutObjectCommand({
-    Bucket: bucketName,
-    Key: buildLessonAssetKey(courseId, lessonId, filename),
-    ContentType: contentType,
-  });
+export async function getSignedGetUrl(key: string, expiresInSeconds = 3600) {
+  const command = new GetObjectCommand({ Bucket: bucketName, Key: key });
   return getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
 }
