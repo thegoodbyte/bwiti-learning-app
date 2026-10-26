@@ -76,6 +76,7 @@ export function LessonForm({
       file.name,
       file.type || "application/octet-stream"
     );
+    console.log("Got upload URL:", url);
     await uploadWithProgress(url, file, onProgress);
     return key;
   }
@@ -138,6 +139,7 @@ export function LessonForm({
 
       router.push(`/admin/courses/${courseId}`);
     } catch (err) {
+      console.error("Lesson save/upload error:", err);
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setSubmitting(false);
     }
