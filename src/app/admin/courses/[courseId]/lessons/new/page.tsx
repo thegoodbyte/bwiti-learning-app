@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { createLessonAction } from "@/app/admin/actions";
 import { LessonForm } from "../LessonForm";
 
 export default async function NewLessonPage({
@@ -18,7 +17,7 @@ export default async function NewLessonPage({
         ← Back to course
       </Link>
       <h1 className="text-2xl font-semibold">New lesson</h1>
-      <LessonForm action={createLessonAction.bind(null, courseId)} />
+      <LessonForm courseId={courseId} />
     </main>
   );
 }

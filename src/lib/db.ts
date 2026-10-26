@@ -193,7 +193,7 @@ export async function createLesson(lesson: {
   );
 }
 
-export async function updateLesson(
+export async function updateLessonFields(
   lessonId: string,
   fields: {
     title: string;
@@ -201,29 +201,30 @@ export async function updateLesson(
     summary: string | null;
     body: string | null;
     lyricsText: string | null;
-    videoKey: string | null;
-    audioKey: string | null;
-    lyricsImageKey: string | null;
+  }
+) {
+  await pool.query(
+    `UPDATE lessons SET title = $1, type = $2, summary = $3, body = $4, lyrics_text = $5
+     WHERE id = $6`,
+    [fields.title, fields.type, fields.summary, fields.body, fields.lyricsText, lessonId]
+  );
+}
+
+export async function updateLessonMedia(
+  lessonId: string,
+  media: {
+    videoKey?: string | null;
+    audioKey?: string | null;
+    lyricsImageKey?: string | null;
   }
 ) {
   await pool.query(
     `UPDATE lessons SET
-      title = $1, type = $2, summary = $3, body = $4, lyrics_text = $5,
-      video_key = COALESCE($6, video_key),
-      audio_key = COALESCE($7, audio_key),
-      lyrics_image_key = COALESCE($8, lyrics_image_key)
-     WHERE id = $9`,
-    [
-      fields.title,
-      fields.type,
-      fields.summary,
-      fields.body,
-      fields.lyricsText,
-      fields.videoKey,
-      fields.audioKey,
-      fields.lyricsImageKey,
-      lessonId,
-    ]
+      video_key = COALESCE($1, video_key),
+      audio_key = COALESCE($2, audio_key),
+      lyrics_image_key = COALESCE($3, lyrics_image_key)
+     WHERE id = $4`,
+    [media.videoKey ?? null, media.audioKey ?? null, media.lyricsImageKey ?? null, lessonId]
   );
 }
 

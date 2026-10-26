@@ -1,5 +1,16 @@
 export async function register() {
-  if (process.env.NEXT_RUNTIME !== "nodejs" || !process.env.DATABASE_URL) {
+  if (process.env.NEXT_RUNTIME !== "nodejs") {
+    return;
+  }
+
+  const { ensureBucketCors } = await import("@/lib/s3");
+  try {
+    await ensureBucketCors();
+  } catch (error) {
+    console.error("Skipping bucket CORS setup:", error);
+  }
+
+  if (!process.env.DATABASE_URL) {
     return;
   }
 

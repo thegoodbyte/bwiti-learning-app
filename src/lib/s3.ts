@@ -1,5 +1,10 @@
 import "server-only";
-import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+  PutBucketCorsCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const bucketName = process.env.S3_BUCKET ?? process.env.S3_BUCKET_NAME;
@@ -22,24 +27,43 @@ function buildLessonAssetKey(courseId: string, lessonId: string, filename: strin
   return `courses/${courseId}/${lessonId}/${Date.now()}-${filename}`;
 }
 
-export async function uploadLessonAsset(
+export async function getSignedUploadUrl(
   courseId: string,
   lessonId: string,
-  file: { name: string; type: string; buffer: Buffer }
+  filename: string,
+  contentType: string,
+  expiresInSeconds = 3600
 ) {
-  const key = buildLessonAssetKey(courseId, lessonId, file.name);
-  await s3Client.send(
-    new PutObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-      Body: file.buffer,
-      ContentType: file.type,
-    })
-  );
-  return key;
+  const key = buildLessonAssetKey(courseId, lessonId, filename);
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ContentType: contentType,
+  });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
+  return { url, key };
 }
 
 export async function getSignedGetUrl(key: string, expiresInSeconds = 3600) {
   const command = new GetObjectCommand({ Bucket: bucketName, Key: key });
   return getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
+}
+
+export async function ensureBucketCors() {
+  await s3Client.send(
+    new PutBucketCorsCommand({
+      Bucket: bucketName,
+      CORSConfiguration: {
+        CORSRules: [
+          {
+            AllowedOrigins: ["*"],
+            AllowedMethods: ["PUT", "GET", "HEAD"],
+            AllowedHeaders: ["*"],
+            ExposeHeaders: ["ETag"],
+            MaxAgeSeconds: 3000,
+          },
+        ],
+      },
+    })
+  );
 }

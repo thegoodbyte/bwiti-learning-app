@@ -9,11 +9,12 @@ import {
   updateCourse,
   deleteCourse,
   createLesson,
-  updateLesson,
+  updateLessonFields,
+  updateLessonMedia,
   deleteLesson,
   type LessonType,
 } from "@/lib/db";
-import { uploadLessonAsset } from "@/lib/s3";
+import { getSignedUploadUrl } from "@/lib/s3";
 import { slugify } from "@/lib/slug";
 
 export async function loginAction(formData: FormData) {
@@ -76,118 +77,69 @@ export async function deleteCourseAction(courseId: string) {
   redirect("/admin");
 }
 
-async function fileFromFormData(formData: FormData, field: string) {
-  const file = formData.get(field);
-  if (file instanceof File && file.size > 0) {
-    return {
-      name: file.name,
-      type: file.type || "application/octet-stream",
-      buffer: Buffer.from(await file.arrayBuffer()),
-    };
-  }
-  return null;
-}
+export type LessonTextFields = {
+  title: string;
+  type: LessonType;
+  summary: string | null;
+  body: string | null;
+  lyricsText: string | null;
+};
 
-export async function createLessonAction(courseId: string, formData: FormData) {
-  const title = String(formData.get("title") ?? "").trim();
-  const type = String(formData.get("type") ?? "video") as LessonType;
-  const summary = String(formData.get("summary") ?? "").trim() || null;
-  const body = String(formData.get("body") ?? "").trim() || null;
-  const lyricsText = String(formData.get("lyricsText") ?? "").trim() || null;
-
-  if (!title) {
-    redirect(`/admin/courses/${courseId}/lessons/new?error=1`);
+export async function saveLessonTextAction(
+  courseId: string,
+  lessonId: string | null,
+  fields: LessonTextFields
+) {
+  if (!fields.title.trim()) {
+    throw new Error("Title is required");
   }
 
-  const id = slugify(title);
-
-  let videoKey: string | null = null;
-  let audioKey: string | null = null;
-  let lyricsImageKey: string | null = null;
-
-  if (type === "video") {
-    const videoFile = await fileFromFormData(formData, "video");
-    if (videoFile) {
-      videoKey = await uploadLessonAsset(courseId, id, videoFile);
-    }
+  if (lessonId) {
+    await updateLessonFields(lessonId, fields);
+    revalidatePath(`/admin/courses/${courseId}`);
+    revalidatePath(`/courses/${courseId}`);
+    return lessonId;
   }
 
-  if (type === "audio") {
-    const audioFile = await fileFromFormData(formData, "audio");
-    if (audioFile) {
-      audioKey = await uploadLessonAsset(courseId, id, audioFile);
-    }
-    const lyricsImageFile = await fileFromFormData(formData, "lyricsImage");
-    if (lyricsImageFile) {
-      lyricsImageKey = await uploadLessonAsset(courseId, id, lyricsImageFile);
-    }
-  }
-
+  const id = slugify(fields.title);
   await createLesson({
     id,
     courseId,
-    title,
-    type,
-    summary,
-    body,
-    lyricsText,
-    videoKey,
-    audioKey,
-    lyricsImageKey,
+    title: fields.title,
+    type: fields.type,
+    summary: fields.summary,
+    body: fields.body,
+    lyricsText: fields.lyricsText,
+    videoKey: null,
+    audioKey: null,
+    lyricsImageKey: null,
   });
-
   revalidatePath(`/admin/courses/${courseId}`);
   revalidatePath(`/courses/${courseId}`);
-  redirect(`/admin/courses/${courseId}`);
+  return id;
 }
 
-export async function updateLessonAction(
+export async function requestLessonUploadUrlAction(
   courseId: string,
   lessonId: string,
-  formData: FormData
+  filename: string,
+  contentType: string
 ) {
-  const title = String(formData.get("title") ?? "").trim();
-  const type = String(formData.get("type") ?? "video") as LessonType;
-  const summary = String(formData.get("summary") ?? "").trim() || null;
-  const body = String(formData.get("body") ?? "").trim() || null;
-  const lyricsText = String(formData.get("lyricsText") ?? "").trim() || null;
+  return getSignedUploadUrl(courseId, lessonId, filename, contentType);
+}
 
-  let videoKey: string | null = null;
-  let audioKey: string | null = null;
-  let lyricsImageKey: string | null = null;
-
-  if (type === "video") {
-    const videoFile = await fileFromFormData(formData, "video");
-    if (videoFile) {
-      videoKey = await uploadLessonAsset(courseId, lessonId, videoFile);
-    }
+export async function attachLessonMediaAction(
+  courseId: string,
+  lessonId: string,
+  media: {
+    videoKey?: string | null;
+    audioKey?: string | null;
+    lyricsImageKey?: string | null;
   }
-
-  if (type === "audio") {
-    const audioFile = await fileFromFormData(formData, "audio");
-    if (audioFile) {
-      audioKey = await uploadLessonAsset(courseId, lessonId, audioFile);
-    }
-    const lyricsImageFile = await fileFromFormData(formData, "lyricsImage");
-    if (lyricsImageFile) {
-      lyricsImageKey = await uploadLessonAsset(courseId, lessonId, lyricsImageFile);
-    }
-  }
-
-  await updateLesson(lessonId, {
-    title,
-    type,
-    summary,
-    body,
-    lyricsText,
-    videoKey,
-    audioKey,
-    lyricsImageKey,
-  });
-
+) {
+  await updateLessonMedia(lessonId, media);
   revalidatePath(`/admin/courses/${courseId}`);
   revalidatePath(`/courses/${courseId}`);
-  redirect(`/admin/courses/${courseId}`);
 }
 
 export async function deleteLessonAction(courseId: string, lessonId: string) {

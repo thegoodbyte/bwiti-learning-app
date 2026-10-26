@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLesson } from "@/lib/db";
-import { updateLessonAction } from "@/app/admin/actions";
 import { LessonForm } from "../../LessonForm";
 
 export const dynamic = "force-dynamic";
@@ -27,10 +26,7 @@ export default async function EditLessonPage({
         ← Back to course
       </Link>
       <h1 className="text-2xl font-semibold">Edit lesson</h1>
-      <LessonForm
-        action={updateLessonAction.bind(null, courseId, lessonId)}
-        lesson={lesson}
-      />
+      <LessonForm courseId={courseId} lesson={lesson} />
     </main>
   );
 }
